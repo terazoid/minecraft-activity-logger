@@ -71,7 +71,7 @@ async function sendMessage(text) {
 function getEnv(name) {
     const value = process.env[name];
     if(!value) {
-        throw new Error(`${name} env var nequired`);
+        throw new Error(`${name} env var required`);
     }
     return value;
 }

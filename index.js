@@ -14,15 +14,26 @@ const api = axios.create({
     baseURL: `https://api.telegram.org`,
 });
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 check();
-setInterval(check, CHECK_INTERVAL_S*1000)
 
 async function check() {
     try {
-        const { samplePlayers } = await util.status(MC_HOST);
         const newPlayersOnline = new Set();
-        for(const { name } of samplePlayers || []) {
-            newPlayersOnline.add(name);
+        const DELAY = 5000;
+        const MAX_PINGS = Math.ceil((1000*60*10)/DELAY);
+        for(let i=0; i<MAX_PINGS; i++) {
+            const pingTime = Date.now();
+            const { samplePlayers, onlinePlayers } = await util.status(MC_HOST);
+            for(const { name } of samplePlayers || []) {
+                newPlayersOnline.add(name);
+            }
+            if(onlinePlayers <= newPlayersOnline.size || i===MAX_PINGS-1) {
+                break;
+            }
+            await sleep(Math.max(0, DELAY - (Date.now() - pingTime)));
+        }
+        for(const name of newPlayersOnline) {
             if(!playersOnline.has(name)) {
                 onPlayerLogin(name);
             }
@@ -35,6 +46,9 @@ async function check() {
     }
     catch(err) {
         console.error(err);
+    }
+    finally {
+        setTimeout(check, CHECK_INTERVAL_S * 1000);
     }
 }
 
